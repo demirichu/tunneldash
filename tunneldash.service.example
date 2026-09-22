@@ -1,0 +1,21 @@
+[Unit]
+Description=TunnelDash NAT Routing Service
+After=network.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/root/tunneldash
+ExecStart=/root/tunneldash/tunneldash
+Restart=always
+RestartSec=3
+
+Environment=ASPNETCORE_URLS=http://10.0.0.1:80
+Environment=PASS_PHRASE=Password
+Environment=TARGET_IP=10.0.0.2
+Environment=PORT_RANGE=4402-4420
+Environment=PRESERVE_CLIENT_IP=true
+Environment=PRIVATE_INTERFACE=wg0
+
+[Install]
+WantedBy=multi-user.target
