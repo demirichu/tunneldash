@@ -116,7 +116,7 @@ sudo tcpdump -n -i <PRIVATE_INTERFACE> host <TARGET_IP>
 
 Before running TunnelDash, ensure your gateway host meets the following requirements:
 
-- **Operating System:** Debian 11/12, Ubuntu 22.04+, or any modern Linux distribution (x86_64).
+- **Operating System:** Debian 12/13, Ubuntu 22.04+, or another supported modern Linux distribution (x86_64).
 - **Kernel IP Forwarding:** Packet forwarding must be enabled on the host:
   ```bash
   sudo sysctl -w net.ipv4.ip_forward=1
@@ -225,6 +225,8 @@ PostUp = iptables -t mangle -A OUTPUT -m connmark --mark 0x1 -j CONNMARK --resto
 
 # Route marked reply packets through the WireGuard routing table.
 PostUp = ip rule add fwmark 0x1 table 100
+# Force all packets originating from the downstream IP into table 100 (essential for UDP/connectionless services)
+PostUp = ip rule add from 10.0.0.2 table 100
 PostUp = ip route add default dev %i table 100
 
 # Loosen reverse path filtering to allow the asymmetric ingress path.
@@ -235,6 +237,7 @@ PostUp = sysctl -w net.ipv4.conf.%i.rp_filter=2
 PostDown = iptables -t mangle -D PREROUTING -i %i -m conntrack --ctstate NEW -j CONNMARK --set-mark 0x1
 PostDown = iptables -t mangle -D OUTPUT -m connmark --mark 0x1 -j CONNMARK --restore-mark
 PostDown = ip rule del fwmark 0x1 table 100
+PostDown = ip rule del from 10.0.0.2 table 100
 PostDown = ip route flush table 100
 
 [Peer]
@@ -255,6 +258,16 @@ PersistentKeepalive = 25
 - When the local application replies, the kernel creates a new outgoing packet which traverses the `OUTPUT` chain and does not automatically inherit that packet mark.
 - **`CONNMARK`** associates the mark with the connection. `CONNMARK --restore-mark` in `OUTPUT` reapplies it so the response follows `ip rule fwmark` and exits through the WireGuard tunnel.
 - `Table = off` keeps the downstream host's ordinary internet traffic on its normal routing table instead of forcing all traffic through WireGuard.
+
+### UDP & Connectionless Protocol Caveat
+
+While TCP sockets lock onto the established connection tuple (preserving the source IP as `10.0.0.2`), **UDP is stateless and connectionless**.
+
+When downstream UDP applications (such as game servers, DNS, or VoIP) bind to `0.0.0.0` (`INADDR_ANY`), the Linux kernel performs a route lookup to determine the outgoing source IP *before* Netfilter connection tracking can associate the outgoing packet with the inbound session. Under a standard multi-homed downstream host, the kernel selects the default physical interface (e.g., local LAN), stamping an unexpected local IP and causing conntrack mark restoration to fail.
+
+To ensure bidirectional UDP traffic routes seamlessly through the tunnel:
+1. **Source Route Rule:** Ensure `ip rule add from <TARGET_IP> table 100` is active on the downstream host (included in the template above).
+2. **Explicit Socket Binding:** Whenever possible, bind downstream UDP services explicitly to the private interface IP (`10.0.0.2`) rather than `0.0.0.0`.
 
 ### Verification
 
@@ -284,6 +297,34 @@ curl http://<GATEWAY_PUBLIC_IP>:4402
 
 - If client IP preservation is working, it immediately returns your actual remote client IP.
 - If SNAT/MASQUERADE is active, it returns the gateway's private tunnel IP (e.g. `10.0.0.1`).
+
+#### 3. Quick UDP Echo Server
+
+To verify inbound and outbound transparent UDP routing, run this minimal Python UDP listener on the downstream host:
+
+```bash
+python3 - <<'PY'
+import socket
+
+s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+s.bind(("10.0.0.2", 9999))
+
+print("Listening on 9999...")
+
+while True:
+    data, addr = s.recvfrom(1024)
+    print(f"Received from {addr}")
+    s.sendto(b"PONG\n", addr)
+PY
+```
+
+Map an external UDP port (e.g. `4402` ➔ `9999` UDP) in TunnelDash, then send a datagram from an external client:
+
+```bash
+echo "PING" | nc -u -w2 <GATEWAY_PUBLIC_IP> 4402
+```
+
+- If preservation and policy routing succeed, the downstream terminal prints the client's real public IP, and the client receives `PONG`.
 
 ## Tailscale
 
@@ -335,20 +376,41 @@ Tailscale's default netfilter mode is `on`, where it creates and positions its o
 
 ### Real Client IP Preservation with Tailscale
 
-Preserving the original public client IP through Tailscale is possible only when the downstream host and the overlay have an explicit return path for those internet source addresses.
+Preserving the original public client IP through Tailscale requires turning the NAT VPS gateway into a Subnet Router and routing return traffic for forwarded connections back through the gateway.
 
-Do **not** reuse the WireGuard `wg0.conf` policy-routing example for Tailscale. Tailscale manages routing and firewall state differently, and the required return path depends on whether the Tailscale node is acting as a normal peer, subnet router, or another routing endpoint.
+> [!NOTE]
+> The `0.0.0.0/0` route used below is intentional: it provides a routed return path for transparent port forwarding when the downstream host must send internet-destined replies back through the Tailscale gateway. This is different from the usual Tailscale use case of providing whole-network internet egress through an exit node.
 
-For a first deployment, SNAT mode is the simpler and safer topology. Add real-client-IP preservation only after the return route has been verified with packet captures and routing tables.
-
-Useful diagnostics:
-
+#### 1. Gateway (NAT VPS) Configuration
+Advertise the default route or the internet block through Tailscale:
 ```bash
-sudo tailscale status
-ip route show table all | grep -E 'tailscale|52'
-sudo iptables -t nat -S
-sudo iptables -S FORWARD
-sudo tcpdump -n -i tailscale0 host <TARGET_IP>
+sudo tailscale up --advertise-routes=0.0.0.0/0 --snat-subnet-routes=false
+```
+> Approve the advertised route in the Tailscale Admin Console under the gateway node's route settings.
+
+#### 2. Downstream Server Configuration
+Start Tailscale without letting it automatically install and position its netfilter hooks:
+```bash
+sudo tailscale up --accept-routes --netfilter-mode=nodivert
+```
+
+> [!WARNING]
+> `--netfilter-mode=nodivert` means Tailscale's automatically managed firewall rules are not active in their normal position. The downstream host's firewall is therefore your responsibility. Make sure it explicitly allows the forwarded service traffic arriving via `tailscale0`, including traffic whose source is the original public client IP.
+
+Apply the downstream routing and mark restoration rules (matching your `PRIVATE_INTERFACE=tailscale0`):
+```bash
+# Mark incoming packets from the tunnel
+sudo iptables -t mangle -A PREROUTING -i tailscale0 -m conntrack --ctstate NEW -j CONNMARK --set-mark 0x1
+sudo iptables -t mangle -A OUTPUT -m connmark --mark 0x1 -j CONNMARK --restore-mark
+
+# Policy routing for marked & source packets
+sudo ip rule add fwmark 0x1 table 100
+sudo ip rule add from <TARGET_IP> table 100
+sudo ip route add default dev tailscale0 table 100
+
+# Loosen rp_filter
+sudo sysctl -w net.ipv4.conf.all.rp_filter=2
+sudo sysctl -w net.ipv4.conf.tailscale0.rp_filter=2
 ```
 
 ## Other Private or Overlay Networks
@@ -374,6 +436,42 @@ ip route get <TARGET_IP>
 ip -br addr
 ip route
 ```
+
+### OpenVPN (`tun0`) Setup
+
+OpenVPN operates cleanly as a routed layer-3 virtual adapter. Setting up client IP preservation with OpenVPN is structurally identical to WireGuard:
+
+1. **Gateway Configuration:**
+   Set environment variable:
+   ```ini
+   PRIVATE_INTERFACE=tun0
+   PRESERVE_CLIENT_IP=true
+   ```
+
+2. **Downstream Client (`client.ovpn`):**
+   Prevent OpenVPN from overwriting the default gateway, and attach routing scripts:
+   ```text
+   # Prevent overwriting default internet route
+   route-nopull
+   route 10.8.0.0 255.255.255.0
+
+   # Execute routing scripts on tunnel up
+   script-security 2
+   up /etc/openvpn/up-rules.sh
+   down /etc/openvpn/down-rules.sh
+   ```
+
+3. **Downstream `/etc/openvpn/up-rules.sh`:**
+   ```bash
+   #!/bin/bash
+   iptables -t mangle -A PREROUTING -i tun0 -m conntrack --ctstate NEW -j CONNMARK --set-mark 0x1
+   iptables -t mangle -A OUTPUT -m connmark --mark 0x1 -j CONNMARK --restore-mark
+   ip rule add fwmark 0x1 table 100
+   ip rule add from <TARGET_IP> table 100
+   ip route add default dev tun0 table 100
+   sysctl -w net.ipv4.conf.all.rp_filter=2
+   sysctl -w net.ipv4.conf.tun0.rp_filter=2
+   ```
 
 If the target is reachable but replies take a different path, the connection will typically fail unless SNAT is used or policy-based routing is configured on the downstream side.
 
@@ -421,4 +519,3 @@ TunnelDash is intended to run on a dedicated NAT gateway and requires privileged
 TunnelDash is licensed under the MIT License.
 
 See [LICENSE](LICENSE) for the full license text.
-"# tunneldash" 
