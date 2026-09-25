@@ -6,25 +6,41 @@
   <title>TunnelDash</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
   <style>
     :root {
-      --bg-color: #030303;
-      --surface: rgba(10, 10, 10, 0.88);
-      --border: rgba(255, 255, 255, 0.08);
-      --border-focus: rgba(255, 255, 255, 0.35);
-      --border-active: rgba(255, 255, 255, 0.6);
-      --text-main: #f0f0f0;
-      --text-muted: rgba(255, 255, 255, 0.38);
-      --text-dim: rgba(255, 255, 255, 0.2);
-      --glow-soft: 0 0 18px rgba(255, 255, 255, 0.12);
-      --font-main: 'Outfit', sans-serif;
+      --bg-deep: #0b1519;
+      --bg: #101e23;
+      --card: #182c33;
+      --card-soft: #14252b;
+
+      --line: rgba(234, 241, 241, 0.08);
+      --line-strong: rgba(245, 196, 67, 0.28);
+      --line-hover: rgba(234, 241, 241, 0.16);
+
+      --text: #f0f6f6;
+      --text-dim: #8fa7ad;
+
+      --gold: #f5c443;
+      --gold-soft: #fae196;
+      --gold-glow: rgba(245, 196, 67, 0.16);
+
+      --danger: #ef4444;
+      --danger-soft: rgba(239, 68, 68, 0.15);
+      --danger-border: rgba(239, 68, 68, 0.35);
+
+      --font-display: 'Space Grotesk', sans-serif;
+      --font-body: 'Inter', sans-serif;
       --font-mono: 'JetBrains Mono', monospace;
+
+      --radius: 12px;
+      --radius-sm: 6px;
+      --shadow: 0 24px 48px -18px rgba(0, 0, 0, 0.75);
       --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
     }
 
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    *:focus, *:focus-visible, input:focus, button:focus { outline: none !important; box-shadow: none !important; }
+    *:focus, *:focus-visible, input:focus, select:focus, button:focus { outline: none !important; }
 
     input[type=number]::-webkit-inner-spin-button,
     input[type=number]::-webkit-outer-spin-button {
@@ -33,31 +49,31 @@
     }
     input[type=number] { -moz-appearance: textfield; }
 
-    ::-webkit-scrollbar { width: 4px; height: 4px; }
-    ::-webkit-scrollbar-track { background: rgba(0,0,0,0.4); }
-    ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); border-radius: 4px; }
-    ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.25); }
+    ::-webkit-scrollbar { width: 5px; height: 5px; }
+    ::-webkit-scrollbar-track { background: var(--bg-deep); }
+    ::-webkit-scrollbar-thumb { background: rgba(234, 241, 241, 0.12); border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: rgba(245, 196, 67, 0.35); }
 
     body {
-      background-color: var(--bg-color);
-      color: var(--text-main);
-      font-family: var(--font-main);
       min-height: 100vh;
+      background: var(--bg);
+      background-image:
+        radial-gradient(circle at 18% 12%, rgba(245, 196, 67, 0.07), transparent 38%),
+        radial-gradient(circle at 82% 80%, rgba(245, 196, 67, 0.05), transparent 42%),
+        linear-gradient(180deg, var(--bg-deep) 0%, var(--bg) 100%);
+      color: var(--text);
+      font-family: var(--font-body);
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
       display: flex;
       justify-content: center;
-      padding: 40px 20px;
+      padding: 36px 20px;
       position: relative;
-      background-image:
-        linear-gradient(rgba(255, 255, 255, 0.015) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(255, 255, 255, 0.015) 1px, transparent 1px);
-      background-size: 48px 48px;
-      background-position: center center;
-      -webkit-font-smoothing: antialiased;
     }
 
     .container {
       width: 100%;
-      max-width: 860px;
+      max-width: 920px;
       display: flex;
       flex-direction: column;
       gap: 20px;
@@ -73,108 +89,253 @@
     /* --- TOAST MESSAGES --- */
     .flash-messages {
       position: fixed; top: 24px; left: 50%; transform: translateX(-50%);
-      z-index: 5000; width: 100%; max-width: 420px; padding: 0 16px;
+      z-index: 5000; width: 100%; max-width: 440px; padding: 0 16px;
       display: flex; flex-direction: column; gap: 8px; pointer-events: none;
     }
     .flash-message {
-      pointer-events: auto; background: rgba(14, 14, 14, 0.96);
-      border: 1px solid var(--border-focus); border-radius: 10px; padding: 12px 18px;
-      font-family: var(--font-mono); font-size: 11px; color: #fff;
+      pointer-events: auto;
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-sm);
+      padding: 12px 18px;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--text);
       display: flex; justify-content: space-between; align-items: center;
-      backdrop-filter: blur(20px); box-shadow: 0 20px 40px rgba(0,0,0,0.85), var(--glow-soft);
+      backdrop-filter: blur(16px);
+      box-shadow: var(--shadow);
       animation: slideDown 0.3s var(--ease-out);
     }
-    .flash-error { border-left: 3px solid #ffffff; }
-    .flash-success { border-left: 3px solid rgba(255, 255, 255, 0.5); }
+    .flash-error { border-left: 3px solid var(--danger); }
+    .flash-success { border-left: 3px solid var(--gold); }
     @keyframes slideDown { from { opacity: 0; transform: translateY(-12px); } to { opacity: 1; transform: translateY(0); } }
 
     /* --- HEADER --- */
     .header {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 16px;
-      padding: 22px 28px;
-      backdrop-filter: blur(24px);
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 18px 24px;
+      backdrop-filter: blur(12px);
       display: flex;
       justify-content: space-between;
       align-items: center;
-      box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+      box-shadow: var(--shadow);
     }
     .brand { display: flex; align-items: center; gap: 14px; }
-    .logo-box {
-      width: 40px; height: 40px; background: #ffffff;
-      border-radius: 10px; display: flex; align-items: center; justify-content: center;
-      color: #000000; font-family: var(--font-mono); font-weight: 800; font-size: 18px;
-      box-shadow: 0 0 30px rgba(255, 255, 255, 0.25); user-select: none;
-    }
-    .title h1 { font-size: 18px; font-weight: 600; letter-spacing: -0.5px; }
-    .title p { font-family: var(--font-mono); font-size: 10px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; margin-top: 3px; }
+	.logo-box {
+	  width: 40px;
+	  height: 40px;
+	  background: var(--card-soft);
+	  color: var(--gold);
+	  border: 1px solid var(--line-strong);
+	  border-radius: var(--radius-sm);
+	  display: flex;
+	  align-items: center;
+	  justify-content: center;
+	  box-shadow: 0 0 16px var(--gold-glow);
+	  user-select: none;
+	  transition: all 0.2s var(--ease-out);
+	}
 
-    /* Crisp White Breathing Beacon */
-    .pulse-dot {
-      width: 6px; height: 6px; border-radius: 50%; background: #ffffff;
-      display: inline-block;
-      box-shadow: 0 0 10px rgba(255, 255, 255, 0.8), 0 0 20px rgba(255, 255, 255, 0.4);
-      animation: pulseGlow 2.4s infinite ease-in-out;
+	.logo-box:hover {
+	  border-color: var(--gold);
+	  box-shadow: 0 0 22px rgba(245, 196, 67, 0.3);
+	  transform: translateY(-1px);
+	}
+    .title h1 {
+      font-family: var(--font-display);
+      font-size: 1.25rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      color: var(--text);
     }
-    @keyframes pulseGlow {
-      0%, 100% { opacity: 1; transform: scale(1); }
-      50% { opacity: 0.35; transform: scale(0.85); box-shadow: 0 0 5px rgba(255, 255, 255, 0.4); }
+    .title p {
+      font-family: var(--font-mono);
+      font-size: 0.72rem;
+      color: var(--text-dim);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin-top: 2px;
+    }
+
+    .pulse-dot {
+      width: 8px; height: 8px; border-radius: 50%; background: var(--gold);
+      display: inline-block;
+      box-shadow: 0 0 0 3px var(--gold-glow);
+      animation: pulse 2.5s infinite ease-in-out;
+    }
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); opacity: 1; }
+      50% { transform: scale(0.9); opacity: 0.65; }
     }
 
     /* --- BUTTONS --- */
     button, .btn-submit {
-      font-family: var(--font-mono); font-size: 11px; font-weight: 700;
-      letter-spacing: 0.5px; cursor: pointer; transition: all 0.25s var(--ease-out);
-      border: 1px solid var(--border); border-radius: 8px;
-      padding: 10px 16px; display: inline-flex; align-items: center; justify-content: center; gap: 8px;
-      background: rgba(255, 255, 255, 0.04); color: #ffffff;
+      font-family: var(--font-display);
+      font-size: 0.85rem;
+      font-weight: 600;
+      letter-spacing: 0.01em;
+      cursor: pointer;
+      transition: all 0.18s var(--ease-out);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-sm);
+      padding: 9px 16px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      background: var(--card-soft);
+      color: var(--text);
     }
-    button:hover:not(:disabled):not(.seg-btn), .btn-submit:hover:not(:disabled) {
-      background: #ffffff !important; color: #000000 !important;
-      border-color: #ffffff !important; box-shadow: 0 0 25px rgba(255, 255, 255, 0.25) !important;
-      transform: scale(1.02);
+    button:hover:not(:disabled):not(.seg-btn) {
+      border-color: var(--line-hover);
+      background: rgba(234, 241, 241, 0.05);
+      color: var(--text);
     }
     button:active:not(:disabled) { transform: scale(0.98); }
-    button:disabled { opacity: 0.25; cursor: not-allowed; }
+    button:disabled { opacity: 0.35; cursor: not-allowed; }
 
-    /* Pure Monochrome Danger Action */
+    .btn-submit {
+      background: var(--gold);
+      color: var(--bg-deep);
+      border: none;
+      border-radius: 999px;
+      font-weight: 700;
+      box-shadow: 0 6px 18px -4px rgba(245, 196, 67, 0.4);
+    }
+    .btn-submit:hover:not(:disabled) {
+      filter: brightness(1.06);
+      transform: translateY(-1px);
+      box-shadow: 0 8px 22px -4px rgba(245, 196, 67, 0.5);
+      background: var(--gold) !important;
+      color: var(--bg-deep) !important;
+      border: none !important;
+    }
+    .btn-submit:active:not(:disabled) {
+      transform: translateY(0);
+      filter: brightness(0.96);
+    }
+
+    .btn-action {
+      background: var(--card-soft);
+      color: var(--text-dim);
+      border: 1px solid var(--line);
+      font-family: var(--font-mono);
+      font-size: 10px;
+      font-weight: 600;
+      padding: 6px 12px;
+      border-radius: var(--radius-sm);
+      letter-spacing: 0.04em;
+    }
+    .btn-action:hover:not(:disabled) {
+      background: rgba(245, 196, 67, 0.1) !important;
+      color: var(--gold-soft) !important;
+      border-color: var(--line-strong) !important;
+      box-shadow: 0 0 12px var(--gold-glow);
+    }
+
     .btn-danger {
-      background: transparent; color: var(--text-muted);
-      border: 1px solid var(--border); font-size: 10px; padding: 6px 12px;
+      background: transparent;
+      color: var(--danger);
+      border: 1px solid var(--danger-border);
+      font-family: var(--font-mono);
+      font-size: 10px;
+      font-weight: 600;
+      padding: 6px 12px;
+      border-radius: var(--radius-sm);
+      letter-spacing: 0.04em;
     }
     .btn-danger:hover:not(:disabled) {
-      background: #ffffff !important; color: #000000 !important;
-      border-color: #ffffff !important; box-shadow: 0 0 20px rgba(255, 255, 255, 0.3) !important;
+      background: var(--danger-soft) !important;
+      color: #fca5a5 !important;
+      border-color: var(--danger) !important;
+      box-shadow: 0 0 16px rgba(239, 68, 68, 0.25) !important;
     }
 
     /* --- PANELS --- */
     .panel {
-      background: var(--surface); border: 1px solid var(--border);
-      border-radius: 16px; padding: 28px; backdrop-filter: blur(24px);
-      box-shadow: 0 30px 60px rgba(0,0,0,0.6);
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 24px;
+      backdrop-filter: blur(12px);
+      box-shadow: var(--shadow);
+      transition: border-color 0.3s var(--ease-out), box-shadow 0.3s var(--ease-out);
     }
+	.panel.mode-editing {
+	  border-color: rgba(245, 196, 67, 0.55) !important;
+	  box-shadow: 
+		0 0 0 1px rgba(245, 196, 67, 0.35),
+		0 0 36px -4px rgba(245, 196, 67, 0.3),
+		var(--shadow) !important;
+	  position: relative;
+	}
+	.panel.mode-editing::before {
+	  content: '';
+	  position: absolute;
+	  top: -1px; left: 16px; right: 16px;
+	  height: 2px;
+	  background: linear-gradient(90deg, transparent, var(--gold), transparent);
+	  box-shadow: 0 0 10px var(--gold);
+	}
+	.btn-cancel-edit {
+	  background: rgba(239, 68, 68, 0.1) !important;
+	  color: #fca5a5 !important;
+	  border: 1px solid var(--danger-border) !important;
+	  font-family: var(--font-mono);
+	  font-size: 11px;
+	  font-weight: 700;
+	  letter-spacing: 0.04em;
+	  padding: 0 18px;
+	  height: 42px;
+	  border-radius: 999px;
+	  cursor: pointer;
+	  transition: all 0.18s var(--ease-out);
+	}
+	.btn-cancel-edit:hover {
+	  background: var(--danger) !important;
+	  color: #fff !important;
+	  border-color: var(--danger) !important;
+	  box-shadow: 0 0 16px rgba(239, 68, 68, 0.4) !important;
+	}
+
     .section-title {
-      font-family: var(--font-mono); font-size: 11px; font-weight: 700; color: #fff;
-      margin-bottom: 20px; padding-bottom: 12px; border-bottom: 1px dashed var(--border);
-      display: flex; justify-content: space-between; align-items: center; letter-spacing: 0.5px; text-transform: uppercase;
+      font-family: var(--font-display);
+      font-size: 0.92rem;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 20px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
     }
 
     /* --- PORT CHIP SELECTOR --- */
     .port-selector-wrapper { margin-bottom: 22px; }
     .port-selector-header {
-      display: flex; justify-content: space-between; font-family: var(--font-mono);
-      font-size: 10px; color: var(--text-muted); text-transform: uppercase; margin-bottom: 10px;
+      display: flex;
+      justify-content: space-between;
+      font-family: var(--font-mono);
+      font-size: 0.74rem;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-bottom: 10px;
     }
     .ports-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(76px, 1fr));
+      grid-template-columns: repeat(auto-fill, minmax(78px, 1fr));
       gap: 8px;
     }
     .port-chip {
-      background: rgba(255, 255, 255, 0.02);
-      border: 1px solid var(--border);
-      border-radius: 8px;
+      background: var(--card-soft);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-sm);
       padding: 10px 6px;
       display: flex;
       flex-direction: column;
@@ -182,163 +343,234 @@
       justify-content: center;
       cursor: pointer;
       font-family: var(--font-mono);
-      transition: all 0.2s var(--ease-out);
+      transition: all 0.18s var(--ease-out);
       user-select: none;
     }
-    .port-chip .p-num { font-size: 12px; font-weight: 700; color: #fff; }
-    .port-chip .p-status { font-size: 8px; color: var(--text-muted); text-transform: uppercase; margin-top: 3px; letter-spacing: 0.5px; }
+    .port-chip .p-num {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--text);
+      letter-spacing: -0.01em;
+    }
+    .port-chip .p-status {
+      font-size: 8px;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      margin-top: 3px;
+      letter-spacing: 0.5px;
+    }
 
     .port-chip:hover:not(.disabled) {
-      background: rgba(255, 255, 255, 0.05);
-      border-color: var(--border-focus);
-      box-shadow: var(--glow-soft);
+      border-color: var(--line-hover);
+      background: rgba(234, 241, 241, 0.04);
       transform: translateY(-2px);
     }
     .port-chip.selected {
-      background: #ffffff !important;
-      border-color: #ffffff !important;
-      box-shadow: 0 0 25px rgba(255, 255, 255, 0.3);
-      transform: scale(1.04);
+      background: var(--gold) !important;
+      border-color: var(--gold) !important;
+      box-shadow: 0 0 20px var(--gold-glow) !important;
+      transform: scale(1.03);
     }
-    .port-chip.selected .p-num, .port-chip.selected .p-status { color: #000000 !important; font-weight: 800; }
+    .port-chip.selected .p-num,
+    .port-chip.selected .p-status {
+      color: var(--bg-deep) !important;
+      font-weight: 800;
+    }
 
-    /* Industrial Ghost Disabled State */
     .port-chip.disabled {
-      opacity: 0.3;
+      opacity: 0.35;
       cursor: not-allowed;
       border-style: dashed;
       background: transparent;
-      border-color: rgba(255, 255, 255, 0.08);
+      border-color: var(--line);
     }
-    .port-chip.disabled .p-num { text-decoration: line-through; color: var(--text-muted); }
-    .port-chip.disabled .p-status { color: var(--text-muted); font-weight: 500; }
+    .port-chip.disabled .p-num { text-decoration: line-through; color: var(--text-dim); }
+    .port-chip.disabled .p-status { color: var(--text-dim); }
 
     /* --- FORM CONTROLS --- */
     .form-grid {
       display: grid;
-      grid-template-columns: 1fr auto auto;
+      grid-template-columns: 1fr auto auto auto;
       gap: 16px;
       align-items: flex-end;
     }
-    .form-group { display: flex; flex-direction: column; gap: 8px; }
+    @media (max-width: 780px) {
+      .form-grid { grid-template-columns: 1fr 1fr; }
+    }
+    @media (max-width: 500px) {
+      .form-grid { grid-template-columns: 1fr; }
+    }
+
+    .form-group { display: flex; flex-direction: column; gap: 6px; }
     .form-group label {
-      font-family: var(--font-mono); font-size: 10px; color: var(--text-muted);
-      text-transform: uppercase; letter-spacing: 0.5px;
+      font-family: var(--font-body);
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
     }
     .input-wrapper { position: relative; display: flex; align-items: center; width: 100%; }
     .input-badge {
-      position: absolute; left: 12px; font-family: var(--font-mono);
-      font-size: 10px; color: rgba(255, 255, 255, 0.3); pointer-events: none;
+      position: absolute;
+      left: 12px;
+      font-family: var(--font-mono);
+      font-size: 10px;
+      font-weight: 700;
+      color: var(--gold-soft);
+      pointer-events: none;
+      letter-spacing: 0.05em;
     }
     input {
-      width: 100%; background: rgba(0, 0, 0, 0.6); border: 1px solid var(--border);
-      border-radius: 8px; color: #ffffff; font-family: var(--font-mono); font-size: 13px;
-      padding: 10px 14px; outline: none; transition: all 0.2s var(--ease-out);
+      width: 100%;
+      height: 42px;
+      background-color: var(--bg-deep);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-sm);
+      color: var(--text);
+      font-family: var(--font-mono);
+      font-size: 0.86rem;
+      padding: 0 14px;
+      outline: none;
+      transition: border-color 0.18s ease, box-shadow 0.18s ease;
     }
-    input.with-badge { padding-left: 48px; }
+    input.with-badge { padding-left: 50px; }
     input:focus {
-      border-color: var(--border-focus) !important;
-      background: rgba(20, 20, 20, 0.95);
-      box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.15), var(--glow-soft) !important;
+      border-color: var(--gold) !important;
+      box-shadow: 0 0 0 3px var(--gold-glow) !important;
+      background-color: var(--bg-deep);
+    }
+    input::placeholder {
+      color: var(--text-dim);
+      opacity: 0.6;
+      font-family: var(--font-body);
     }
 
-    /* --- PROTOCOL CONTROL --- */
+    /* --- PROTOCOL & NAT CONTROL (PILL STYLE) --- */
     .segmented-control {
       display: inline-flex;
-      background: rgba(0, 0, 0, 0.6);
-      border: 1px solid var(--border);
-      border-radius: 8px;
+      background: var(--bg-deep);
+      border: 1px solid var(--line);
+      border-radius: 999px;
       padding: 3px;
       gap: 3px;
     }
     .segmented-control .seg-btn {
       background: transparent !important;
       border: none !important;
-      border-radius: 6px;
-      padding: 8px 14px;
-      font-family: var(--font-mono);
-      font-size: 11px;
+      border-radius: 999px !important;
+      padding: 6px 14px;
+      font-family: var(--font-body);
+      font-size: 0.78rem;
       font-weight: 600;
-      color: var(--text-muted) !important;
+      color: var(--text-dim) !important;
       cursor: pointer;
       box-shadow: none !important;
       transform: none !important;
-      transition: all 0.2s var(--ease-out);
+      transition: background 0.15s ease, color 0.15s ease;
     }
     .segmented-control .seg-btn:hover:not(.active) {
-      color: #ffffff !important;
-      background: rgba(255, 255, 255, 0.06) !important;
+      color: var(--text) !important;
+      background: rgba(234, 241, 241, 0.05) !important;
     }
     .segmented-control .seg-btn.active {
-      background: #ffffff !important;
-      color: #000000 !important;
+      background: var(--gold) !important;
+      color: var(--bg-deep) !important;
       font-weight: 700;
-      box-shadow: 0 0 20px rgba(255, 255, 255, 0.25) !important;
+      box-shadow: 0 2px 10px var(--gold-glow) !important;
     }
 
-    /* --- TABLE & MONOCHROME CONTRAST COPY CHIP --- */
+    /* --- TABLE & BADGES --- */
     .table-wrap {
-      width: 100%; border: 1px solid var(--border); border-radius: 12px;
-      background: rgba(0,0,0,0.3); overflow: hidden;
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: var(--radius-sm);
+      background: var(--bg-deep);
+      overflow-x: auto;
     }
     table { width: 100%; border-collapse: collapse; text-align: left; }
     th {
-      padding: 12px 16px; font-family: var(--font-mono); font-size: 9px; font-weight: 700;
-      color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px;
-      border-bottom: 1px solid var(--border); background: rgba(255,255,255,0.01);
+      padding: 12px 16px;
+      font-family: var(--font-mono);
+      font-size: 0.72rem;
+      font-weight: 600;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      border-bottom: 1px solid var(--line);
+      background: var(--card-soft);
+      white-space: nowrap;
     }
     td {
-      padding: 12px 16px; border-bottom: 1px solid rgba(255,255,255,0.04);
-      font-family: var(--font-mono); font-size: 11px; color: #ededed;
+      padding: 13px 16px;
+      border-bottom: 1px solid var(--line);
+      font-family: var(--font-mono);
+      font-size: 0.82rem;
+      color: var(--text);
+      white-space: nowrap;
     }
     tr:last-child td { border-bottom: none; }
-    tr:hover td { background: rgba(255,255,255,0.02); }
+    tr:hover td { background: rgba(234, 241, 241, 0.02); }
 
-    /* High-Contrast Ghost Endpoint Box */
     .endpoint-copy {
       display: inline-flex; align-items: center; gap: 8px; cursor: pointer;
-      font-weight: 600; color: rgba(255, 255, 255, 0.85); transition: all 0.2s var(--ease-out);
-      padding: 4px 8px; border-radius: 6px;
+      font-weight: 600; color: var(--gold-soft); transition: all 0.15s ease;
+      padding: 4px 8px; border-radius: var(--radius-sm);
       border: 1px solid transparent; background: transparent;
     }
     .endpoint-copy:hover {
-      color: #ffffff;
-      background: rgba(255, 255, 255, 0.04);
-      border-color: var(--border-focus);
-      box-shadow: var(--glow-soft);
+      color: var(--gold);
+      background: var(--gold-glow);
+      border-color: var(--line-strong);
     }
 
-    /* The Crisp Ghost Copy Badge */
     .copy-hint {
       font-size: 8px; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase;
-      color: rgba(255, 255, 255, 0.6);
-      border: 1px solid var(--border); border-radius: 4px;
-      padding: 1px 5px; background: rgba(0, 0, 0, 0.4);
+      color: var(--text-dim);
+      border: 1px solid var(--line); border-radius: 4px;
+      padding: 2px 6px; background: var(--card-soft);
       opacity: 0; transform: translateX(-4px);
       transition: all 0.2s var(--ease-out);
     }
     .endpoint-copy:hover .copy-hint {
       opacity: 1; transform: translateX(0);
-      border-color: var(--border-active);
-      color: #ffffff;
-      box-shadow: 0 0 10px rgba(255, 255, 255, 0.15);
+      border-color: var(--line-strong);
+      color: var(--gold);
     }
 
     .badge {
-      font-family: var(--font-mono); font-size: 9px; font-weight: 700; padding: 3px 6px;
-      border-radius: 4px; display: inline-block; background: rgba(255, 255, 255, 0.05);
-      color: #ffffff; border: 1px solid var(--border); letter-spacing: 0.5px;
+      font-family: var(--font-mono); font-size: 9px; font-weight: 700; padding: 3px 7px;
+      border-radius: 4px; display: inline-block; background: var(--card-soft);
+      color: var(--text); border: 1px solid var(--line); letter-spacing: 0.5px;
+    }
+
+    .badge-preserve {
+      background: rgba(234, 241, 241, 0.04);
+      color: var(--text-dim);
+      border: 1px solid var(--line);
+    }
+
+    .badge-masq {
+      background: var(--gold);
+      color: var(--bg-deep);
+      border: 1px solid var(--gold);
+      font-weight: 800;
+      box-shadow: 0 0 12px var(--gold-glow);
     }
 
     /* --- MODALS --- */
     .modal-overlay {
-      position: fixed; inset: 0; background: rgba(0,0,0,0.88); z-index: 2000;
-      display: flex; justify-content: center; align-items: center; backdrop-filter: blur(16px);
+      position: fixed; inset: 0;
+      background: rgba(11, 21, 25, 0.85);
+      z-index: 2000;
+      display: flex; justify-content: center; align-items: center;
+      backdrop-filter: blur(12px);
+      padding: 20px;
     }
     .modal-card {
-      width: 100%; max-width: 380px; padding: 32px; border-radius: 16px;
-      background: var(--surface); border: 1px solid var(--border-focus);
-      box-shadow: 0 40px 80px rgba(0,0,0,0.95), var(--glow-soft); animation: panelAppear 0.25s var(--ease-out);
+      width: 100%; max-width: 400px; padding: 28px; border-radius: var(--radius);
+      background: var(--card); border: 1px solid var(--line-strong);
+      box-shadow: var(--shadow); animation: panelAppear 0.25s var(--ease-out);
     }
     .hidden { display: none !important; }
   </style>
@@ -350,18 +582,27 @@
   <!-- AUTH MODAL -->
   <div id="authModal" class="modal-overlay hidden">
     <div class="modal-card">
-      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:24px; padding-bottom:12px; border-bottom:1px dashed var(--border);">
-        <span style="font-family:var(--font-mono); font-size:10px; color:var(--text-muted);">SECURITY GATEWAY</span>
-        <div style="display:inline-flex; align-items:center; gap:6px; font-family:var(--font-mono); font-size:10px;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; padding-bottom:12px; border-bottom:1px solid var(--line);">
+        <span style="font-family:var(--font-mono); font-size:10px; color:var(--text-dim); letter-spacing:0.06em;">SECURITY GATEWAY</span>
+        <div style="display:inline-flex; align-items:center; gap:6px; font-family:var(--font-mono); font-size:10px; color:var(--gold-soft);">
           <div class="pulse-dot"></div>
           <span>AUTH REQUIRED</span>
         </div>
       </div>
-      <div style="display:flex; align-items:center; gap:14px; margin-bottom:24px;">
-        <div class="logo-box">T</div>
+      <div style="display:flex; align-items:center; gap:14px; margin-bottom:22px;">
+        <div class="logo-box">
+		  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+			<!-- Dış tünel halkası / Gateway -->
+			<rect x="3" y="3" width="18" height="18" rx="5" opacity="0.35" stroke-dasharray="3 3"/>
+			<!-- İç tünel girişi -->
+			<rect x="7" y="7" width="10" height="10" rx="3" stroke-width="1.8"/>
+			<!-- Tünelden geçen yönlendirme vektörü / Forwarding dash -->
+			<path d="M12 10v4m0 0l-1.5-1.5M12 14l1.5-1.5" stroke-width="2"/>
+		  </svg>
+		</div>
         <div>
-          <h2 style="font-size:18px; font-weight:600;">TunnelDash</h2>
-          <p style="font-family:var(--font-mono); font-size:10px; color:var(--text-muted); text-transform:uppercase;">Master Key</p>
+          <h2 style="font-family:var(--font-display); font-size:1.2rem; font-weight:700; color:var(--text);">TunnelDash</h2>
+          <p style="font-family:var(--font-mono); font-size:10px; color:var(--text-dim); text-transform:uppercase; letter-spacing:0.05em;">Master Key Access</p>
         </div>
       </div>
       <form onsubmit="handleLogin(event)">
@@ -372,7 +613,7 @@
             <input type="password" id="loginPassphrase" class="with-badge" required placeholder="••••••••••••">
           </div>
         </div>
-        <button type="submit" id="loginBtn" class="btn-submit" style="width: 100%; padding: 12px;">
+        <button type="submit" id="loginBtn" class="btn-submit" style="width: 100%; height: 44px;">
           <span>AUTHENTICATE</span> <span>➔</span>
         </button>
       </form>
@@ -381,14 +622,14 @@
 
   <!-- THEMED CONFIRM MODAL -->
   <div id="confirmModal" class="modal-overlay hidden">
-    <div class="modal-card" style="max-width: 360px; text-align: left;">
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
-        <span style="font-family: var(--font-mono); font-size: 10px; color: #fff; font-weight: 700; letter-spacing: 1px;">REVOKE ROUTE</span>
-        <span style="font-family: var(--font-mono); font-size: 9px; color: var(--text-muted);">ESC / ENTER</span>
+    <div class="modal-card" style="max-width: 380px; text-align: left;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid var(--line);">
+        <span style="font-family: var(--font-display); font-size: 0.88rem; color: #fff; font-weight: 700; letter-spacing: 0.05em;">REVOKE ROUTE</span>
+        <span style="font-family: var(--font-mono); font-size: 9px; color: var(--text-dim);">ESC / ENTER</span>
       </div>
-      <p id="confirmTargetText" style="font-family: var(--font-mono); font-size: 13px; color: #fff; margin-bottom: 8px; font-weight: 600;"></p>
-      <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 24px; line-height: 1.5;">
-        This port forwarding rule will be removed from iptables. Active connections will terminate immediately.
+      <p id="confirmTargetText" style="font-family: var(--font-mono); font-size: 13px; color: var(--gold); margin-bottom: 8px; font-weight: 600;"></p>
+      <p style="font-size: 12px; color: var(--text-dim); margin-bottom: 24px; line-height: 1.5;">
+        This port forwarding rule and any associated per-rule NAT policies will be removed from iptables immediately.
       </p>
       <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
         <button id="cancelConfirmBtn" style="padding: 10px;">CANCEL</button>
@@ -401,27 +642,42 @@
   <div class="container">
     <div class="header">
       <div class="brand">
-        <div class="logo-box">T</div>
+        <div class="logo-box">
+		  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+			<!-- Dış tünel halkası / Gateway -->
+			<rect x="3" y="3" width="18" height="18" rx="5" opacity="0.35" stroke-dasharray="3 3"/>
+			<!-- İç tünel girişi -->
+			<rect x="7" y="7" width="10" height="10" rx="3" stroke-width="1.8"/>
+			<!-- Tünelden geçen yönlendirme vektörü / Forwarding dash -->
+			<path d="M12 10v4m0 0l-1.5-1.5M12 14l1.5-1.5" stroke-width="2"/>
+		  </svg>
+		</div>
         <div class="title">
           <h1>TunnelDash</h1>
           <p id="subNode">FETCHING...</p>
         </div>
       </div>
       <div style="display: flex; align-items: center; gap: 16px;">
-        <div style="display:inline-flex; align-items:center; gap:6px; font-family:var(--font-mono); font-size:10px; color:var(--text-muted);">
+        <div style="display:inline-flex; align-items:center; gap:8px; font-family:var(--font-mono); font-size:11px; color:var(--text-dim);">
           <div class="pulse-dot"></div>
-          <span id="gatewayStatus">ONLINE</span>
+          <span id="gatewayStatus" style="color: var(--text);">ONLINE</span>
         </div>
-        <button onclick="handleLogout()" style="padding: 8px 14px; font-size: 10px;">SIGN OUT</button>
+        <button onclick="handleLogout()" style="padding: 7px 14px; font-size: 11px;">SIGN OUT</button>
       </div>
     </div>
 
-    <!-- FORWARD PANEL -->
-    <div class="panel">
-      <div class="section-title">
-        <span>PORT FORWARDING</span>
-        <span id="selectedIndicator" style="color:var(--text-muted); font-size:10px;">SELECT EXTERNAL PORT</span>
-      </div>
+    <!-- FORWARD / EDIT PANEL (MORPHING) -->
+    <div class="panel" id="forwardPanel">
+		<div class="section-title">
+		  <div style="display: flex; align-items: center; gap: 10px;">
+			<span id="panelModeTitle">PORT FORWARDING</span>
+			<div id="editModeBadge" class="hidden" style="display: inline-flex; align-items: center; gap: 6px; background: rgba(245, 196, 67, 0.12); border: 1px solid var(--line-strong); padding: 2px 8px; border-radius: 999px;">
+			  <span class="pulse-dot" style="width: 6px; height: 6px;"></span>
+			  <span style="font-family: var(--font-mono); font-size: 9px; color: var(--gold); font-weight: 700;">EDITING (ESC)</span>
+			</div>
+		  </div>
+		  <span id="selectedIndicator" style="color:var(--text-dim); font-size:0.75rem; font-family:var(--font-mono);">SELECT EXTERNAL PORT</span>
+		</div>
 
       <!-- SELECTABLE PORT GRID -->
       <div class="port-selector-wrapper">
@@ -432,7 +688,7 @@
         <div class="ports-grid" id="portsGrid"></div>
       </div>
 
-      <form id="forwardForm" onsubmit="handleForward(event)" class="form-grid">
+      <form id="forwardForm" onsubmit="handleFormSubmit(event)" class="form-grid">
         <div class="form-group">
           <label>INTERNAL TARGET PORT</label>
           <div class="input-wrapper">
@@ -450,9 +706,23 @@
           </div>
         </div>
 
-        <button type="submit" id="forwardBtn" class="btn-submit" style="padding: 11px 20px;">
-          <span>ADD ROUTE</span> <span>+</span>
-        </button>
+        <div class="form-group">
+          <label>CLIENT IP (NAT)</label>
+          <div class="segmented-control" id="natModeSelector">
+            <button type="button" class="seg-btn active" data-val="preserve" title="Downstream sees real client IP">PRESERVE</button>
+            <button type="button" class="seg-btn" data-val="masq" title="Gateway MASQUERADE">MASQ</button>
+          </div>
+        </div>
+
+        <div style="display: flex; gap: 8px;">
+		  <button type="button" id="cancelEditBtn" onclick="exitEditMode()" class="btn-cancel-edit hidden">
+			✕ CANCEL
+		  </button>
+		  
+		  <button type="submit" id="submitBtn" class="btn-submit" style="height: 42px; padding: 0 22px;">
+			<span id="submitBtnText">ADD ROUTE</span> <span id="submitBtnIcon">+</span>
+		  </button>
+		</div>
       </form>
     </div>
 
@@ -460,7 +730,7 @@
     <div class="panel">
       <div class="section-title">
         <span>ACTIVE ROUTING RULES</span>
-        <span id="ruleCountBadge" style="color:var(--text-muted); font-size:10px;">0 RULES</span>
+        <span id="ruleCountBadge" style="color:var(--text-dim); font-size:0.75rem; font-family:var(--font-mono);">0 RULES</span>
       </div>
       <div class="table-wrap">
         <table>
@@ -469,11 +739,12 @@
               <th>PUBLIC ENDPOINT</th>
               <th>INTERNAL TARGET</th>
               <th>PROTOCOL</th>
+              <th>NAT MODE</th>
               <th style="text-align: right;">ACTION</th>
             </tr>
           </thead>
           <tbody id="rulesTable">
-            <tr><td colspan="4" style="text-align:center; color:var(--text-muted); padding:24px;">Scanning routing tables...</td></tr>
+            <tr><td colspan="5" style="text-align:center; color:var(--text-dim); padding:24px;">Scanning routing tables...</td></tr>
           </tbody>
         </table>
       </div>
@@ -481,12 +752,16 @@
   </div>
 
   <script>
-	let natPorts = [];
+    let natPorts = [];
     let publicIp = '';
     let selectedPort = null;
     let selectedProto = 'tcp';
+    let selectedNatMode = 'preserve';
+    let defaultNatMode = 'preserve';
+    let userTouchedNatMode = false;
     let activeRules = [];
     let pendingDelete = null;
+    let editingRule = null;
 
     const showFlash = (msg, isError = false) => {
       const c = document.getElementById('flashContainer');
@@ -497,11 +772,30 @@
       setTimeout(() => f.remove(), 4000);
     };
 
+    // Protocol selector sync
+    const setProtocol = (proto) => {
+      selectedProto = proto;
+      document.querySelectorAll('#protoSelector .seg-btn').forEach(b => {
+        b.classList.toggle('active', b.dataset.val === proto);
+      });
+    };
+
     document.querySelectorAll('#protoSelector .seg-btn').forEach(btn => {
+      btn.onclick = () => setProtocol(btn.dataset.val);
+    });
+
+    // NAT Mode selector sync
+    const setNatMode = (mode) => {
+      selectedNatMode = mode;
+      document.querySelectorAll('#natModeSelector .seg-btn').forEach(b => {
+        b.classList.toggle('active', b.dataset.val === mode);
+      });
+    };
+
+    document.querySelectorAll('#natModeSelector .seg-btn').forEach(btn => {
       btn.onclick = () => {
-        document.querySelectorAll('#protoSelector .seg-btn').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-        selectedProto = btn.dataset.val;
+        setNatMode(btn.dataset.val);
+        userTouchedNatMode = true;
       };
     });
 
@@ -510,6 +804,11 @@
       grid.innerHTML = '';
       
       const occupiedPorts = new Set(activeRules.map(r => parseInt(r.inPort)));
+      // If editing, allow currently edited port to remain selectable
+      if (editingRule) {
+        occupiedPorts.delete(editingRule.inPort);
+      }
+
       let freeCount = 0;
 
       natPorts.forEach(port => {
@@ -517,24 +816,26 @@
         if (!isOccupied) freeCount++;
 
         const chip = document.createElement('div');
-        chip.className = `port-chip ${isOccupied ? 'disabled' : ''} ${selectedPort === port ? 'selected' : ''}`;
+        const isSelected = selectedPort === port;
+        const isCurrentEdit = editingRule && editingRule.inPort === port;
+
+        chip.className = `port-chip ${isOccupied ? 'disabled' : ''} ${isSelected ? 'selected' : ''}`;
         
+        let statusText = isOccupied ? 'IN USE' : 'AVAILABLE';
+        if (isCurrentEdit && !isSelected) statusText = 'CURRENT';
+
         chip.innerHTML = `
           <span class="p-num">:${port}</span>
-          <span class="p-status">${isOccupied ? 'IN USE' : 'AVAILABLE'}</span>
+          <span class="p-status">${statusText}</span>
         `;
 
         if (!isOccupied) {
           chip.onclick = () => {
             selectedPort = port;
             document.getElementById('selectedIndicator').innerText = `SELECTED: ${publicIp}:${port}`;
-            document.getElementById('selectedIndicator').style.color = '#fff';
+            document.getElementById('selectedIndicator').style.color = 'var(--gold-soft)';
             renderPortGrid();
           };
-        } else if (selectedPort === port) {
-          selectedPort = null;
-          document.getElementById('selectedIndicator').innerText = 'SELECT EXTERNAL PORT';
-          document.getElementById('selectedIndicator').style.color = 'var(--text-muted)';
         }
 
         grid.appendChild(chip);
@@ -551,10 +852,12 @@
       const onSuccess = () => {
         if (hint) {
           hint.innerText = 'COPIED';
-          hint.style.borderColor = '#ffffff';
+          hint.style.borderColor = 'var(--gold)';
+          hint.style.color = 'var(--gold)';
           setTimeout(() => {
             hint.innerText = originalText;
             hint.style.borderColor = '';
+            hint.style.color = '';
           }, 1500);
         }
         showFlash(`Copied ${text} to clipboard.`);
@@ -593,6 +896,12 @@
           if (data.publicIp) publicIp = data.publicIp;
           if (data.architecture) document.getElementById('subNode').innerText = publicIp ? `${data.architecture} // ${publicIp}` : data.architecture;
           if (data.status) document.getElementById('gatewayStatus').innerText = data.status;
+          if (data.defaultNatMode) {
+            defaultNatMode = data.defaultNatMode.toLowerCase();
+            if (!userTouchedNatMode && !editingRule) {
+              setNatMode(defaultNatMode);
+            }
+          }
           if (data.ports && Array.isArray(data.ports)) {
             natPorts = data.ports;
             renderPortGrid();
@@ -617,13 +926,15 @@
         tbody.innerHTML = '';
 
         if (activeRules.length === 0) {
-          tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:var(--text-muted); padding:24px;">No active forwarding rules found.</td></tr>';
+          tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:var(--text-dim); padding:24px;">No active forwarding rules found.</td></tr>';
         } else {
           activeRules.forEach(r => {
             const tr = document.createElement('tr');
             const protoStr = (r.tcp && r.udp) ? 'TCP/UDP' : (r.tcp ? 'TCP' : 'UDP');
             const protoParam = (r.tcp && r.udp) ? 'both' : (r.tcp ? 'tcp' : 'udp');
             const fullEndpoint = `${publicIp}:${r.inPort}`;
+            const natMode = (r.natMode || 'preserve').toLowerCase();
+            const natBadgeClass = (natMode === 'masq') ? 'badge-masq' : 'badge-preserve';
 
             tr.innerHTML = `
               <td>
@@ -632,10 +943,14 @@
                   <span class="copy-hint">COPY</span>
                 </span>
               </td>
-              <td style="color:var(--text-muted);">${r.targetIp}:${r.outPort}</td>
+              <td style="color:var(--text-dim);">${r.targetIp}:${r.outPort}</td>
               <td><span class="badge">${protoStr}</span></td>
+              <td><span class="badge ${natBadgeClass}">${natMode.toUpperCase()}</span></td>
               <td style="text-align: right;">
-                <button class="btn-danger" onclick="openConfirm(${r.inPort}, ${r.outPort}, '${protoParam}', '${r.targetIp}')">REVOKE</button>
+                <div style="display:inline-flex; gap:6px; justify-content:flex-end;">
+                  <button class="btn-action" onclick="enterEditMode(${r.inPort}, ${r.outPort}, '${protoParam}', '${natMode}')">EDIT</button>
+                  <button class="btn-danger" onclick="openConfirm(${r.inPort}, ${r.outPort}, '${protoParam}', '${r.targetIp}')">REVOKE</button>
+                </div>
               </td>
             `;
             tbody.appendChild(tr);
@@ -647,42 +962,136 @@
       }
     };
 
-    const handleForward = async (e) => {
+    // --- MORPHING EDIT MODE HANDLERS ---
+    const enterEditMode = (inPort, outPort, protocol, natMode) => {
+	  editingRule = {
+		inPort: parseInt(inPort),
+		outPort: parseInt(outPort),
+		protocol: protocol,
+		natMode: (natMode || 'preserve').toLowerCase()
+	  };
+
+	  const panel = document.getElementById('forwardPanel');
+	  panel.classList.add('mode-editing');
+	  panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+	  document.getElementById('panelModeTitle').innerText = `EDIT ROUTE :${inPort}`;
+	  
+	  // Rozet ve İptal Butonunu görünür yap
+	  document.getElementById('editModeBadge').classList.remove('hidden');
+	  document.getElementById('cancelEditBtn').classList.remove('hidden');
+
+	  selectedPort = editingRule.inPort;
+	  document.getElementById('selectedIndicator').innerText = `EDITING: ${publicIp}:${selectedPort}`;
+	  document.getElementById('selectedIndicator').style.color = 'var(--gold)';
+
+	  document.getElementById('outPort').value = editingRule.outPort;
+	  setProtocol(editingRule.protocol);
+	  setNatMode(editingRule.natMode);
+
+	  document.getElementById('submitBtnText').innerText = 'UPDATE ROUTE';
+	  document.getElementById('submitBtnIcon').innerText = '➔';
+
+	  renderPortGrid();
+	};
+
+	const exitEditMode = () => {
+	  editingRule = null;
+	  const panel = document.getElementById('forwardPanel');
+	  panel.classList.remove('mode-editing');
+
+	  document.getElementById('panelModeTitle').innerText = 'PORT FORWARDING';
+	  
+	  // Rozet ve İptal Butonunu gizle
+	  document.getElementById('editModeBadge').classList.add('hidden');
+	  document.getElementById('cancelEditBtn').classList.add('hidden');
+
+	  selectedPort = null;
+	  document.getElementById('selectedIndicator').innerText = 'SELECT EXTERNAL PORT';
+	  document.getElementById('selectedIndicator').style.color = 'var(--text-dim)';
+	  document.getElementById('outPort').value = '';
+
+	  setProtocol('tcp');
+	  setNatMode(defaultNatMode);
+
+	  document.getElementById('submitBtnText').innerText = 'ADD ROUTE';
+	  document.getElementById('submitBtnIcon').innerText = '+';
+
+	  renderPortGrid();
+	};
+
+    const handleFormSubmit = async (e) => {
       e.preventDefault();
       if (!selectedPort) {
-        showFlash('Select an available port from the pool.', true);
+        showFlash('Select a public ingress port from the pool.', true);
         return;
       }
 
       const outPort = parseInt(document.getElementById('outPort').value);
-      const btn = document.getElementById('forwardBtn');
-
+      const btn = document.getElementById('submitBtn');
       btn.disabled = true;
-      try {
-        const res = await fetch('/api/forward', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ inPort: selectedPort, outPort, protocol: selectedProto })
-        });
 
-        if (res.ok) {
-          showFlash(`Forwarded ${publicIp}:${selectedPort} ➔ :${outPort} [${selectedProto.toUpperCase()}]`);
-          selectedPort = null;
-          document.getElementById('outPort').value = '';
-          document.getElementById('selectedIndicator').innerText = 'SELECT EXTERNAL PORT';
-          document.getElementById('selectedIndicator').style.color = 'var(--text-muted)';
-          await fetchRules();
-        } else {
-          const err = await res.json();
-          showFlash(err.error || 'Failed to add rule.', true);
+      if (editingRule) {
+        // PUT /api/forward (Edit)
+        try {
+          const payload = {
+            oldInPort: editingRule.inPort,
+            oldOutPort: editingRule.outPort,
+            oldProtocol: editingRule.protocol,
+            inPort: selectedPort,
+            outPort: outPort,
+            protocol: selectedProto,
+            natMode: selectedNatMode
+          };
+
+          const res = await fetch('/api/forward', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
+
+          if (res.ok) {
+            showFlash(`Route updated: :${selectedPort} ➔ :${outPort} [${selectedProto.toUpperCase()}] (${selectedNatMode.toUpperCase()})`);
+            exitEditMode();
+            await fetchRules();
+          } else {
+            const err = await res.json();
+            showFlash(err.error || 'Failed to update rule.', true);
+          }
+        } catch (err) {
+          showFlash('Error: ' + err.message, true);
+        } finally {
+          btn.disabled = false;
         }
-      } catch (err) {
-        showFlash('Error: ' + err.message, true);
-      } finally {
-        btn.disabled = false;
+      } else {
+        // POST /api/forward (Add)
+        try {
+          const res = await fetch('/api/forward', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ inPort: selectedPort, outPort, protocol: selectedProto, natMode: selectedNatMode })
+          });
+
+          if (res.ok) {
+            showFlash(`Forwarded ${publicIp}:${selectedPort} ➔ :${outPort} [${selectedProto.toUpperCase()}] (${selectedNatMode.toUpperCase()})`);
+            selectedPort = null;
+            document.getElementById('outPort').value = '';
+            document.getElementById('selectedIndicator').innerText = 'SELECT EXTERNAL PORT';
+            document.getElementById('selectedIndicator').style.color = 'var(--text-dim)';
+            await fetchRules();
+          } else {
+            const err = await res.json();
+            showFlash(err.error || 'Failed to add rule.', true);
+          }
+        } catch (err) {
+          showFlash('Error: ' + err.message, true);
+        } finally {
+          btn.disabled = false;
+        }
       }
     };
 
+    // --- REVOKE / DELETE MODAL HANDLERS ---
     const openConfirm = (inPort, outPort, protocol, targetIp) => {
       pendingDelete = { inPort, outPort, protocol };
       document.getElementById('confirmTargetText').innerText = `${publicIp}:${inPort} ➔ ${targetIp || 'TARGET'}:${outPort} [${protocol.toUpperCase()}]`;
@@ -708,6 +1117,9 @@
 
         if (res.ok) {
           showFlash(`Rule :${inPort} revoked.`);
+          if (editingRule && editingRule.inPort === parseInt(inPort)) {
+            exitEditMode();
+          }
           await fetchRules();
         } else {
           const err = await res.json();
@@ -725,6 +1137,8 @@
       if (!document.getElementById('confirmModal').classList.contains('hidden')) {
         if (e.key === 'Escape') closeConfirm();
         if (e.key === 'Enter') executeDelete();
+      } else if (editingRule && e.key === 'Escape') {
+        exitEditMode();
       }
     });
 
@@ -743,7 +1157,7 @@
 
         if (res.ok) {
           document.getElementById('authModal').classList.add('hidden');
-		  document.getElementById('loginPassphrase').value = '';
+          document.getElementById('loginPassphrase').value = '';
           showFlash('Authenticated.');
           fetchRules();
         } else {
